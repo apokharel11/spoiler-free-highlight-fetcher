@@ -77,7 +77,8 @@ export async function GET(request: Request) {
     // 4. Fetch and Process (In Parallel)
     const allResults = await Promise.all(targets.map(async ([key, config]) => {
       const limit = Math.min(Math.max(hours * 5, 50), 200);
-      const binPath = path.join(process.cwd(), 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp');
+      // const binPath = path.join(process.cwd(), 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp');
+      const binPath = path.join(process.cwd(), 'bin', 'yt-dlp');
 
       const data = await new Promise((resolve, reject) => {
         const args = [
@@ -95,7 +96,7 @@ export async function GET(request: Request) {
             env: {
               ...process.env,
               // telling the child process where to look for Python
-              PATH: `${process.env.PATH}:/usr/bin/python3:/usr/bin/python`
+              // PATH: `${process.env.PATH}:/usr/bin/python3:/usr/bin/python`
             } 
           }
         );
