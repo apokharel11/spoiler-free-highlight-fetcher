@@ -13,16 +13,24 @@ interface Highlight {
 
 export default function SportsHighlights() {
   const [mode, setMode] = useState('ALL');
-  const [lookback, setLookback] = useState('24h');
+  const [lookback, setLookback] = useState('24'); // Removed 'h' to make validation easier
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false); // New state to prevent auto-load
+
+  const isLookbackInvalid = lookback.trim() === '';
 
   const fetchHighlights = async () => {
+    if (isLookbackInvalid) return; // Prevent empty searches
+    
     setLoading(true);
     setError(null);
+    setHasSearched(true);
+    
     try {
-      const res = await fetch(`/api/highlights?mode=${mode}&past-lookback=${lookback}`);
+      // Appending 'h' here so the user doesn't have to type it
+      const res = await fetch(`/api/highlights?mode=${mode}&past-lookback=${lookback}h`);
       if (!res.ok) throw new Error('Failed to fetch highlights');
       const data = await res.json();
       setHighlights(data);
@@ -33,9 +41,11 @@ export default function SportsHighlights() {
     }
   };
 
+  // Empty dependency array = only runs ONCE on mount (optional)
+  // Or remove entirely if you want it blank until the first click
   useEffect(() => {
-    fetchHighlights();
-  }, [mode, lookback]);
+    // fetchHighlights(); // Commented out to prevent auto-run on load
+  }, []);
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-slate-300 p-4 md:p-12 font-sans selection:bg-slate-800">
@@ -67,22 +77,23 @@ export default function SportsHighlights() {
             <div className="relative flex items-center group">
               <input 
                 type="text"
+                placeholder="24"
                 value={lookback} 
                 onChange={(e) => setLookback(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && fetchHighlights()}
-                className="w-16 bg-slate-950 border border-slate-800 text-slate-100 rounded-sm pl-2 pr-5 py-1.5 text-xs focus:border-slate-500 outline-none transition-colors font-mono"
+                className={`w-16 bg-slate-950 border ${isLookbackInvalid ? 'border-red-900' : 'border-slate-800'} text-slate-100 rounded-sm pl-2 pr-5 py-1.5 text-xs focus:border-slate-500 outline-none transition-colors font-mono`}
               />
-              <span className="absolute right-1.5 text-[10px] text-slate-600 group-focus-within:text-slate-400 font-bold">
+              <span className={`absolute right-1.5 text-[10px] ${isLookbackInvalid ? 'text-red-900' : 'text-slate-600'} group-focus-within:text-slate-400 font-bold`}>
                 h
               </span>
             </div>
             
             <button 
               onClick={fetchHighlights}
-              disabled={loading}
+              disabled={loading || isLookbackInvalid}
               className="bg-slate-100 hover:bg-white text-black disabled:opacity-20 transition-all rounded-sm px-4 py-1.5 text-xs font-bold uppercase tracking-tight"
             >
-              {loading ? '...' : 'Refresh'}
+              {loading ? '...' : hasSearched ? 'Refresh' : 'Search'}
             </button>
           </div>
         </header>
@@ -96,9 +107,13 @@ export default function SportsHighlights() {
 
         {/* Results List */}
         <div className="space-y-1">
-          {loading ? (
+          {!hasSearched ? (
+            <div className="text-center py-32 text-slate-800 text-[10px] font-bold uppercase tracking-[0.4em] opacity-50">
+              Select source and timeframe to begin
+            </div>
+          ) : loading ? (
             [...Array(6)].map((_, i) => (
-              <div key={i} className="h-16 bg-slate-900/30 animate-pulse rounded-sm border border-slate-900/50" />
+              <div key={i} className="h-16 bg-slate-900/30 animate-pulse rounded-sm border border-slate-900/50 mb-1" />
             ))
           ) : highlights.length > 0 ? (
             highlights.map((video) => (
@@ -138,7 +153,7 @@ export default function SportsHighlights() {
 
         <footer className="mt-24 text-center border-t border-slate-900 pt-8">
           <p className="text-slate-800 text-[9px] font-bold uppercase tracking-[0.3em]">
-            tonystarkjr3, courtesy of YT-DLP
+            tonystarkjr3 • binary fetch via yt-dlp
           </p>
         </footer>
       </div>

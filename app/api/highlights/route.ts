@@ -90,7 +90,15 @@ export async function GET(request: Request) {
           '--extractor-args', 'youtubetab:approximate_date=a'
         ];
 
-        const child = spawn(binPath, args);
+        const child = spawn(binPath, args, 
+          { 
+            env: {
+              ...process.env,
+              // telling the child process where to look for Python
+              PATH: `${process.env.PATH}:/usr/bin/python3:/usr/bin/python`
+            } 
+          }
+        );
         let stdout = '';
         let stderr = '';
 
