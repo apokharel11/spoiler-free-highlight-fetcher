@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "node node_modules/youtube-dl-exec/scripts/postinstall.js"
+    "postinstall": "youtube-dl-exec --version"
   },
   "dependencies": {
     "clsx": "^2.1.1",
