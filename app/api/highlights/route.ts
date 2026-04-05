@@ -21,16 +21,23 @@ const CHANNELS: Record<string, ChannelConfig> = {
   },
   ESPN: {
     url: 'https://www.youtube.com/@ESPNFC/videos',
-    pattern: /vs\..*\| LALIGA Highlights/,
+    // Matches: Team A [vs] Team B | [Competition] Highlights | ESPN FC
+    pattern: /.+\s+(?:vs?\.?|v\.)\s+.+\|.*Highlights\s*\|/i,
     clean: (title) => {
-      // The "Surgical" fix: finds 'vs.', grabs 2 words left, everything right to the pipe
-      const match = title.match(/(\b[\w\s]+ vs\. [^|]*\| LALIGA Highlights)/);
+      // Isolate matchup by taking the segment before the first pipe
+      const matchupPart = title.split('|')[0].trim();
+
+      // Extract teams around the 'vs' separator
+      const match = matchupPart.match(/(.+?)\s+(?:vs?\.?|v\.)\s+(.+)/i);
+      
       if (match) {
-        const parts = match[1].split(' vs. ');
-        const leftSide = parts[0].trim().split(' ');
-        const team1 = leftSide.slice(-2).join(' ');
-        return `${team1} vs. ${parts[1]}`;
+        // Drop spoiler prefixes (e.g., emojis/clickbait) by keeping only the last 2 words of Team 1
+        const team1 = match[1].trim().split(/\s+/).slice(-2).join(' ');
+        const team2 = match[2].trim();
+
+        return `${team1} vs. ${team2}`;
       }
+      
       return title;
     }
   },

@@ -69,9 +69,9 @@ export default function SportsHighlights() {
               className="bg-slate-950 border border-slate-800 text-slate-400 rounded-sm px-3 py-1.5 text-xs focus:border-slate-500 outline-none transition-colors cursor-pointer"
             >
               <option value="ALL">All Sources</option>
-              <option value="NBC">Premier League (NBC)</option>
-              <option value="ESPN">La Liga (ESPN)</option>
-              <option value="CBS">Champions League (CBS)</option>
+              <option value="NBC">NBC (EPL)</option>
+              <option value="ESPN">ESPN (La Liga, FA/Carabao Cup, Copa Del Rey)</option>
+              <option value="CBS">CBS (UEFA CL, Serie A)</option>
             </select>
 
             <div className="relative flex items-center group">
