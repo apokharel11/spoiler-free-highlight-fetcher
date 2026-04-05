@@ -70,7 +70,7 @@ export default function SportsHighlights() {
             >
               <option value="ALL">All Sources</option>
               <option value="NBC">NBC (EPL)</option>
-              <option value="ESPN">ESPN (La Liga, FA/Carabao Cup, Copa Del Rey)</option>
+              <option value="ESPN">ESPN (La Liga, English Cups, Copa)</option>
               <option value="CBS">CBS (UEFA CL, Serie A)</option>
             </select>
 
