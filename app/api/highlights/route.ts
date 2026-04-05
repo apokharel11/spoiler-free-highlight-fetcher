@@ -21,21 +21,28 @@ const CHANNELS: Record<string, ChannelConfig> = {
   },
   ESPN: {
     url: 'https://www.youtube.com/@ESPNFC/videos',
-    // Matches: Team A [vs] Team B | [Competition] Highlights | ESPN FC
+    // Matches: [Anything] vs. [Anything] | [Competition] Highlights | ESPN FC
     pattern: /.+\s+(?:vs?\.?|v\.)\s+.+\|.*Highlights\s*\|/i,
     clean: (title) => {
-      // Isolate matchup by taking the segment before the first pipe
-      const matchupPart = title.split('|')[0].trim();
+      // Split into 3 main segments: [Matchup] | [Competition Highlights] | [ESPN FC]
+      const segments = title.split('|').map(s => s.trim());
+      if (segments.length < 2) return title;
 
-      // Extract teams around the 'vs' separator
+      const matchupPart = segments[0];
+      const competitionPart = segments[1]; // e.g., "FA Cup Highlights"
+
+      // Regex to find the teams around the 'vs' separator
       const match = matchupPart.match(/(.+?)\s+(?:vs?\.?|v\.)\s+(.+)/i);
       
       if (match) {
-        // Drop spoiler prefixes (e.g., emojis/clickbait) by keeping only the last 2 words of Team 1
-        const team1 = match[1].trim().split(/\s+/).slice(-2).join(' ');
-        const team2 = match[2].trim();
+        // Limit both sides to the last 3 words to cut out "ERLING HAALAND SLOTS A..." 
+        // No professional team name (e.g., "Paris Saint-Germain") exceeds 3 words.
+        const team1 = match[1].split(/\s+/).slice(-3).join(' ');
+        const team2 = match[2].split(/\s+/).slice(0, 3).join(' ');
 
-        return `${team1} vs. ${team2}`;
+        // Return cleaned matchup + the competition context (stripped of the word "Highlights")
+        const competition = competitionPart.replace(/highlights/i, '').trim();
+        return `${team1} vs. ${team2} (${competition})`;
       }
       
       return title;
