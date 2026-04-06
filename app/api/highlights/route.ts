@@ -21,31 +21,29 @@ const CHANNELS: Record<string, ChannelConfig> = {
   },
   ESPN: {
     url: 'https://www.youtube.com/@ESPNFC/videos',
-    // Matches: [Anything] vs. [Anything] | [Competition] Highlights | ESPN FC
     pattern: /.+\s+(?:vs?\.?|v\.)\s+.+\|.*Highlights\s*\|/i,
     clean: (title) => {
-      // Split into 3 main segments: [Matchup] | [Competition Highlights] | [ESPN FC]
       const segments = title.split('|').map(s => s.trim());
-      if (segments.length < 2) return title;
+      if (segments.length < 2) return ''; 
 
-      const matchupPart = segments[0];
-      const competitionPart = segments[1]; // e.g., "FA Cup Highlights"
+      // 1. Competition Logic (Exclude MLS)
+      const competition = segments[1].replace(/highlights/i, '').trim();
+      if (competition.toUpperCase() === 'MLS') return '';
 
-      // Regex to find the teams around the 'vs' separator
-      const match = matchupPart.match(/(.+?)\s+(?:vs?\.?|v\.)\s+(.+)/i);
-      
+      // 2. Matchup Logic
+      const match = segments[0].match(/(.+?)\s+(?:vs?\.?|v\.)\s+(.+)/i);
       if (match) {
-        // Limit both sides to the last 3 words to cut out "ERLING HAALAND SLOTS A..." 
-        // No professional team name (e.g., "Paris Saint-Germain") exceeds 3 words.
-        const team1 = match[1].split(/\s+/).slice(-3).join(' ');
-        const team2 = match[2].split(/\s+/).slice(0, 3).join(' ');
+        const side1Words = match[1].trim().split(/\s+/);
+        const side2Words = match[2].trim().split(/\s+/);
 
-        // Return cleaned matchup + the competition context (stripped of the word "Highlights")
-        const competition = competitionPart.replace(/highlights/i, '').trim();
-        return `${team1} vs. ${team2} (${competition})`;
+        // 3. Strict Word Count Check: 
+        // If > 3 words, it's a specific play/spoiler, not a full game highlight.
+        if (side1Words.length > 3 || side2Words.length > 3) return '';
+
+        return `${side1Words.join(' ')} vs. ${side2Words.join(' ')} (${competition})`;
       }
       
-      return title;
+      return '';
     }
   },
   CBS: {
@@ -150,7 +148,8 @@ export async function GET(request: Request) {
           url: `https://www.youtube.com/watch?v=${v.id}`,
           time: timeAgo(v.timestamp),
           timestamp: v.timestamp // Kept for sorting
-        }));
+        }))
+        .filter((v: any) => v.title !== '');
     }));
 
     // 5. Flatten and Sort by newest first
