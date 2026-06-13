@@ -46,6 +46,33 @@ const CHANNELS: Record<string, ChannelConfig> = {
       return '';
     }
   },
+  FOX: {
+    url: 'https://www.youtube.com/@foxsports/videos',
+    // Strict Matcher: Requires exactly "Extended Highlights" (case-insensitive) 
+    // and ignores titles containing only "Highlights" to filter out fast uploads.
+    pattern: /(.+?)\s+vs\s+(.+?)\s+Extended\s+Highlights/i,
+    clean: (title) => {
+      // 1. Match the teams specifically around the 'Extended Highlights' delimiter
+      const match = title.match(/(.+?)\s+vs\s+(.+?)\s+Extended\s+Highlights\s*(.*)/i);
+      if (!match) return '';
+
+      const team1 = match[1].trim();
+      const team2 = match[2].trim();
+      const trailingContext = match[3] ? match[3].trim() : '';
+
+      // 2. Strip emojis, extra whitespace, and structural flags from metadata
+      const cleanContext = trailingContext
+        .replace(/[\u{1F300}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}]/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // 3. Fallback/Safety word count validation to prevent mapping narrative talk segments
+      if (team1.split(/\s+/).length > 4 || team2.split(/\s+/).length > 4) return '';
+
+      const suffix = cleanContext ? ` (${cleanContext})` : '';
+      return `${team1} vs. ${team2}${suffix}`;
+    }
+  },
   CBS: {
     url: 'https://www.youtube.com/@CBSSportsGolazo/videos',
     pattern: / vs\. .* (Extended Highlights|Highlights)/,

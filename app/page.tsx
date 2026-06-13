@@ -12,7 +12,8 @@ interface Highlight {
 }
 
 export default function SportsHighlights() {
-  const [mode, setMode] = useState('ALL');
+  // Set default source mode to 'FOX' for summer tournament content
+  const [mode, setMode] = useState('FOX');
   const [lookback, setLookback] = useState('24'); // Removed 'h' to make validation easier
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,8 +58,8 @@ export default function SportsHighlights() {
             <h1 className="text-2xl font-bold tracking-tighter text-slate-100 uppercase">
               Spoiler-Free <span className="text-slate-500 font-light">Archive</span>
             </h1>
-            <p className="text-slate-500 text-xs mt-1 font-medium tracking-wide">
-              NBC • ESPN • CBS 
+            <p className="text-slate-500 text-[10px] mt-1 font-bold uppercase tracking-widest">
+              FOX • NBC • ESPN • CBS 
             </p>
           </div>
 
@@ -66,9 +67,10 @@ export default function SportsHighlights() {
             <select 
               value={mode} 
               onChange={(e) => setMode(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-slate-400 rounded-sm px-3 py-1.5 text-xs focus:border-slate-500 outline-none transition-colors cursor-pointer"
+              className="bg-slate-950 border border-slate-800 text-slate-400 rounded-sm px-3 py-1.5 text-xs focus:border-slate-500 outline-none transition-colors cursor-pointer max-w-[220px] sm:max-w-none"
             >
               <option value="ALL">All Sources</option>
+              <option value="FOX">FOX (World Cup Extended)</option>
               <option value="NBC">NBC (EPL)</option>
               <option value="ESPN">ESPN (La Liga, English Cups, Copa)</option>
               <option value="CBS">CBS (UEFA CL, Serie A)</option>
