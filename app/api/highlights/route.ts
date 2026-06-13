@@ -48,25 +48,25 @@ const CHANNELS: Record<string, ChannelConfig> = {
   },
   FOX: {
     url: 'https://www.youtube.com/@foxsports/videos',
-    // Strict Matcher: Requires exactly "Extended Highlights" (case-insensitive) 
-    // and ignores titles containing only "Highlights" to filter out fast uploads.
-    pattern: /(.+?)\s+vs\s+(.+?)\s+Extended\s+Highlights/i,
+    // Modified Pattern: Makes "Extended " optional using (?:Extended\s+)?
+    // This allows matching both "Extended Highlights" and regular "Highlights"
+    pattern: /(.+?)\s+vs\s+(.+?)\s+(?:Extended\s+)?Highlights/i,
     clean: (title) => {
-      // 1. Match the teams specifically around the 'Extended Highlights' delimiter
-      const match = title.match(/(.+?)\s+vs\s+(.+?)\s+Extended\s+Highlights\s*(.*)/i);
+      // Parse structural match handling the optional "Extended" text anchor
+      const match = title.match(/(.+?)\s+vs\s+(.+?)\s+(?:Extended\s+)?Highlights\s*(.*)/i);
       if (!match) return '';
 
       const team1 = match[1].trim();
       const team2 = match[2].trim();
       const trailingContext = match[3] ? match[3].trim() : '';
 
-      // 2. Strip emojis, extra whitespace, and structural flags from metadata
+      // Strip emojis and minimize internal duplicate whitespaces
       const cleanContext = trailingContext
         .replace(/[\u{1F300}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}]/gu, '')
         .replace(/\s+/g, ' ')
         .trim();
 
-      // 3. Fallback/Safety word count validation to prevent mapping narrative talk segments
+      // Ensure it is a valid match representation and not a textual discussion card headline
       if (team1.split(/\s+/).length > 4 || team2.split(/\s+/).length > 4) return '';
 
       const suffix = cleanContext ? ` (${cleanContext})` : '';
@@ -129,6 +129,11 @@ export async function GET(request: Request) {
           '--quiet',
           '--extractor-args', 'youtubetab:approximate_date=a'
         ];
+
+        // FOX routinely uploads 15 min+ for proper extended highlights; i.e. let's skip over the abridged ones
+        if (key === 'FOX') {
+          args.push('--match-filter', 'duration >= 900');
+        }
 
         const child = spawn(binPath, args, 
           { 
