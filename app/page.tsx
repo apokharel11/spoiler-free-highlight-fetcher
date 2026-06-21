@@ -11,26 +11,35 @@ interface Highlight {
   timestamp: number;
 }
 
+// Helper to extract YouTube Video ID for the secure iframe embed
+function getYouTubeId(url: string): string | null {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+}
+
 export default function SportsHighlights() {
-  // Set default source mode to 'FOX' for summer tournament content
   const [mode, setMode] = useState('FOX');
-  const [lookback, setLookback] = useState('24'); // Removed 'h' to make validation easier
+  const [lookback, setLookback] = useState('24'); 
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasSearched, setHasSearched] = useState(false); // New state to prevent auto-load
+  const [hasSearched, setHasSearched] = useState(false); 
+  
+  // Track which video is currently expanded for inline playback
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
 
   const isLookbackInvalid = lookback.trim() === '';
 
   const fetchHighlights = async () => {
-    if (isLookbackInvalid) return; // Prevent empty searches
+    if (isLookbackInvalid) return; 
     
     setLoading(true);
     setError(null);
     setHasSearched(true);
+    setActiveVideoId(null); // Reset player on new search
     
     try {
-      // Appending 'h' here so the user doesn't have to type it
       const res = await fetch(`/api/highlights?mode=${mode}&past-lookback=${lookback}h`);
       if (!res.ok) throw new Error('Failed to fetch highlights');
       const data = await res.json();
@@ -42,10 +51,8 @@ export default function SportsHighlights() {
     }
   };
 
-  // Empty dependency array = only runs ONCE on mount (optional)
-  // Or remove entirely if you want it blank until the first click
   useEffect(() => {
-    // fetchHighlights(); // Commented out to prevent auto-run on load
+    // fetchHighlights(); 
   }, []);
 
   return (
@@ -118,34 +125,64 @@ export default function SportsHighlights() {
               <div key={i} className="h-16 bg-slate-900/30 animate-pulse rounded-sm border border-slate-900/50 mb-1" />
             ))
           ) : highlights.length > 0 ? (
-            highlights.map((video) => (
-              <a 
-                key={video.id} 
-                href={video.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="group flex items-center justify-between p-4 bg-transparent border-b border-slate-900 hover:bg-slate-900/40 transition-all"
-              >
-                <div className="flex-1">
-                  <h3 className="text-sm font-medium text-slate-300 group-hover:text-slate-100 transition-colors">
-                    {video.title}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[9px] font-black uppercase tracking-tighter text-slate-600 group-hover:text-slate-400">
-                      {video.source}
-                    </span>
-                    <span className="text-[10px] text-slate-700">•</span>
-                    <span className="text-[10px] text-slate-600 font-mono tracking-tighter uppercase">{video.time}</span>
-                  </div>
+            highlights.map((video) => {
+              const isExpanded = activeVideoId === video.id;
+              const ytId = getYouTubeId(video.url);
+
+              return (
+                <div 
+                  key={video.id}
+                  className="border-b border-slate-900 bg-transparent transition-all"
+                >
+                  {/* Row Trigger */}
+                  <button 
+                    onClick={() => setActiveVideoId(isExpanded ? null : video.id)}
+                    className={`w-full text-left flex items-center justify-between p-4 hover:bg-slate-900/40 transition-all outline-none ${isExpanded ? 'bg-slate-900/20' : ''}`}
+                  >
+                    <div className="flex-1">
+                      <h3 className={`text-sm font-medium transition-colors ${isExpanded ? 'text-slate-100' : 'text-slate-300'}`}>
+                        {video.title}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[9px] font-black uppercase tracking-tighter text-slate-600">
+                          {video.source}
+                        </span>
+                        <span className="text-[10px] text-slate-700">•</span>
+                        <span className="text-[10px] text-slate-600 font-mono tracking-tighter uppercase">{video.time}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Icon updates based on open/closed state */}
+                    <div className={`${isExpanded ? 'text-slate-400 rotate-90' : 'text-slate-800'} transition-transform duration-200 ml-4`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                      </svg>
+                    </div>
+                  </button>
+
+                  {/* Inline Video Player Dropdown */}
+                  {isExpanded && (
+                    <div className="px-4 pb-4 bg-slate-950/40 animate-fadeIn">
+                      {ytId ? (
+                        <div className="relative w-full aspect-video rounded-sm overflow-hidden border border-slate-900 bg-black">
+                          <iframe
+                            src={`https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`}
+                            title={video.title}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                            className="absolute top-0 left-0 w-full h-full"
+                          ></iframe>
+                        </div>
+                      ) : (
+                        <div className="text-xs p-4 bg-slate-900/50 border border-slate-800 text-slate-500 rounded-sm">
+                          Unable to render native player. <a href={video.url} target="_blank" rel="noopener noreferrer" className="text-slate-400 underline hover:text-slate-200">Open source link directly.</a>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                
-                <div className="text-slate-800 group-hover:text-slate-400 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                  </svg>
-                </div>
-              </a>
-            ))
+              );
+            })
           ) : (
             <div className="text-center py-32 text-slate-700 text-xs font-medium uppercase tracking-[0.2em]">
               Zero matches found.
