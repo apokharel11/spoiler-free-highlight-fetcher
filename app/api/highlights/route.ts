@@ -132,7 +132,7 @@ export async function GET(request: Request) {
 
         // FOX routinely uploads 15 min+ for proper extended highlights; i.e. let's skip over the abridged ones
         if (key === 'FOX') {
-          args.push('--match-filter', 'duration >= 900');
+          args.push('--match-filter', 'duration >= 700');
         }
 
         const child = spawn(binPath, args, 
